@@ -19,7 +19,7 @@ installation checks from a successful live video test. Report any Pro lens
 restriction honestly. Leave video off when finished unless I ask otherwise.
 ```
 
-**Repository access:** this repository is currently private. The account cloning it must have access. A GitHub 404 or authentication error is an access problem; do not change repository visibility or put credentials in commands or files in this checkout.
+**Repository access:** this repository is public. Anyone can clone the HTTPS URL below without a GitHub account or token.
 
 ## Agent quickstart: install on an Omarchy laptop
 
@@ -43,7 +43,7 @@ git clone https://github.com/Nikshay1/iphonecam.git "$HOME/Projects/iphonecam"
 cd "$HOME/Projects/iphonecam"
 ```
 
-For a private-repository clone failure, check `gh auth status` if GitHub CLI is installed and use the user's authorized GitHub connection. Do not clone into a root-owned directory.
+The public HTTPS clone does not require authentication. If cloning fails, check the URL and network/proxy configuration. Do not clone into a root-owned directory.
 
 ### 2. Install build/runtime prerequisites and matching kernel headers
 
@@ -194,7 +194,7 @@ For example, `camera_call SetAutoConnect false` disables automatic activation. D
 
 | Symptom | Check and next action |
 | --- | --- |
-| Clone returns 404/authentication error | This repo is private; confirm the user's GitHub account has access. |
+| Clone returns 404/authentication error | Use the public HTTPS URL above; check its spelling, network access, and any Git URL rewrites or proxy settings. No GitHub token is required. |
 | `qmake6` or Qt headers are missing | Install the prerequisites from step 2, then rerun `bin/install`. |
 | Missing running-kernel headers | Compare `uname -r` with `/usr/lib/modules/*/build`; install matching headers. A newer installed kernel may need a user-arranged reboot. |
 | `doctor` says the virtual camera is missing | Run `iphonecam setup`; inspect its error instead of substituting a physical camera. |
