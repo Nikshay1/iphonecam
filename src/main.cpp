@@ -20,18 +20,19 @@
 #include "theme.h"
 #include "translator.h"
 #include "tray.h"
+#include "watcher.h"
 
 int main(int argc, char **argv) {
     const QStringList args = [&] { QStringList a; for (int i = 1; i < argc; ++i) a << QString::fromLocal8Bit(argv[i]); return a; }();
     const QString command = args.value(0);
-    if (QStringList{"doctor", "status", "stop", "toggle", "quit", "setup", "--help", "--version"}.contains(command)
+    if (QStringList{"watch", "doctor", "status", "stop", "toggle", "quit", "setup", "--help", "--version"}.contains(command)
         || args.contains("--screenshot")) qputenv("QT_QPA_PLATFORM", "offscreen");
     QGuiApplication app(argc, argv);
-    app.setApplicationName("iphonecam"); app.setOrganizationName("iphonecam"); app.setApplicationVersion("0.1.0");
+    app.setApplicationName("iphonecam"); app.setOrganizationName("iphonecam"); app.setApplicationVersion("0.2.0");
     app.setDesktopFileName("iphonecam"); app.setQuitOnLastWindowClosed(false);
     auto out = QTextStream(stdout); auto err = QTextStream(stderr);
     if (command == "--help") {
-        out << "iphonecam [open|--tray|doctor [--json]|status|toggle|stop|quit|setup|--demo]\n"; return 0;
+        out << "iphonecam [open|--tray|watch|doctor [--json]|status|toggle|stop|quit|setup|--demo]\n"; return 0;
     }
     if (command == "--version") { out << app.applicationVersion() << '\n'; return 0; }
     const auto directory = QCoreApplication::applicationDirPath();
@@ -52,6 +53,7 @@ int main(int argc, char **argv) {
         return ok ? 0 : 1;
     }
     const QString service = "io.github.Nikshay1.iphonecam";
+    if (command == "watch") { StreamWatcher watcher; return app.exec(); }
     if (QStringList{"status", "toggle", "stop", "quit"}.contains(command)) {
         QDBusInterface remote(service, "/App", service);
         if (!remote.isValid()) { err << "iphonecam is not running. Launch iphonecam first.\n"; return 1; }

@@ -3,5 +3,5 @@ CONFIG += c++17 release
 TARGET = iphonecam
 TEMPLATE = app
 SOURCES += src/main.cpp src/backend.cpp src/protocol.cpp src/tray.cpp src/theme.cpp src/translator.cpp
-HEADERS += src/backend.h src/protocol.h src/tray.h src/theme.h src/translator.h
+HEADERS += src/backend.h src/protocol.h src/tray.h src/theme.h src/translator.h src/watcher.h
 RESOURCES += src/resources.qrc

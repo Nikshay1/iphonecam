@@ -1,0 +1,39 @@
+#!/bin/bash
+set -euo pipefail
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+source_dir="$ROOT/omarchy-plugin"
+[[ -d $source_dir ]] || source_dir=/usr/share/iphonecam/omarchy-plugin
+omarchy plugin validate "$source_dir"
+config_home="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy"
+mkdir -p "$config_home/plugins"
+staging=$(mktemp -d "$config_home/.iphonecam-stage-XXXXXX")
+trap 'rm -rf "$staging"' EXIT
+cp -a "$source_dir/." "$staging/"
+target="$config_home/plugins/nikshay.iphonecam"
+if [[ -e $target ]]; then
+  mkdir -p "$config_home/backups"
+  mv "$target" "$config_home/backups/iphonecam-$(date +%Y%m%d-%H%M%S)"
+fi
+mv "$staging" "$target"
+omarchy-shell shell rescanPlugins
+omarchy plugin enable nikshay.iphonecam --section right --before omarchy.tray
+# Keep the standard SNI fallback available without drawing a duplicate icon.
+python - "$config_home/shell.json" <<'PY'
+from pathlib import Path
+import datetime, json, shutil, sys
+p = Path(sys.argv[1])
+data = json.loads(p.read_text())
+for entries in data.get('bar', {}).get('layout', {}).values():
+    if not isinstance(entries, list): continue
+    for entry in entries:
+        if not isinstance(entry, dict) or entry.get('id') != 'omarchy.tray': continue
+        hidden = entry.setdefault('hidden', [])
+        if 'iphonecam' not in hidden: hidden.append('iphonecam')
+        entry['pinned'] = [x for x in entry.get('pinned', []) if x != 'iphonecam']
+shutil.copy2(p, str(p) + '.iphonecam-backup-' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
+temp = p.with_name('.shell.json.iphonecam-tmp')
+temp.write_text(json.dumps(data, indent=2) + '\n')
+shutil.copymode(p, temp)
+temp.replace(p)
+PY
+echo 'Native iPhone Camera panel enabled in the upper-right Omarchy bar.'

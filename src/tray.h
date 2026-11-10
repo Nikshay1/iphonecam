@@ -96,14 +96,19 @@ class AppAdaptor : public QDBusAbstractAdaptor {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "io.github.Nikshay1.iphonecam")
 public:
-    explicit AppAdaptor(Tray *tray) : QDBusAbstractAdaptor(tray), m_tray(tray) {}
+    explicit AppAdaptor(Tray *tray);
 public slots:
     void Show() { emit m_tray->showRequested(); }
     void Toggle() { m_tray->backend->toggle(); }
     void Stop() { m_tray->backend->stop(); }
     void SwitchCamera(int id) { m_tray->backend->switchCamera(id); }
+    void SetResolution(const QString &value) { m_tray->backend->setResolution(value); }
+    void SetAutoConnect(bool enabled) { m_tray->backend->setAutoConnect(enabled); }
+    void Reconnect() { m_tray->backend->refresh(); }
     QString Status();
     void Quit();
+signals:
+    void StateChanged(const QString &json);
 private:
     Tray *m_tray;
 };

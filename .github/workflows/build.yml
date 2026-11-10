@@ -5,11 +5,12 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux:base-devel
     steps:
-      - run: pacman -Syu --noconfirm git qt6-base qt6-declarative qt6-svg qt6-wayland python glib2
+      - run: pacman -Syu --noconfirm git qt6-base qt6-declarative qt6-svg qt6-wayland python glib2 nodejs
       - uses: actions/checkout@v4
       - run: bin/build
       - run: dbus-run-session -- bin/test
       - run: dbus-run-session -- python tests/dbus_smoke.py
+      - run: node tests/panel_model.test.js
       - run: QT_QUICK_BACKEND=software build/iphonecam --demo --screenshot build/demo.png
       - uses: actions/upload-artifact@v4
         with:

@@ -1,0 +1,9 @@
+{
+  "title": "iPhone-kamera", "on": "USB · Kamera tændt", "starting": "USB · Starter",
+  "connected": "USB · Kamera slukket", "disconnected": "Ingen iPhone tilsluttet",
+  "lens": "Kameraobjektiv", "resolution": "Videostørrelse", "autoConnect": "Automatisk forbindelse",
+  "enabled": "Til", "disabled": "Fra", "choosePhone": "Vælg på telefonen",
+  "back": "Tilbage", "noPhone": "Tilslut din iPhone", "reconnect": "Forbind USB igen",
+  "settings": "Indstillinger", "actionFailed": "Kunne ikke anvende ændringen. Kontrollér kameratjenesten.",
+  "connectHint": "Tilslut USB, lås din iPhone op, og åbn DroidCam."
+}

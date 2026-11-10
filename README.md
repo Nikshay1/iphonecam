@@ -1,14 +1,15 @@
-![iPhone Camera controls](docs/screenshot.png)
+![Native Omarchy iPhone Camera panel](docs/panel.png)
 
 # iPhone Camera
 
 A small native Omarchy app that puts your USB-connected iPhone webcam in the system tray. Turn video on or off, choose a lens, and keep OBS out of the loop.
 
-**Status: first release, hardware validation pending.** Builds and automated tests cover the desktop UI, USB identification, HTTP controls, Pro restrictions, and D-Bus tray protocol. A real iPhone/DroidCam stream must still be verified. Do not read a successful build as a claim that every iOS/DroidCam version is supported.
+**Hardware tested:** USB video at 1280×720 / 30 fps, a separate V4L2 consumer, off control, and recovery after an interrupted USB tunnel. This phone returned the Pro restriction for remote lens control, so physical lens switching is not yet hardware verified. See the [verification record](docs/PROTOCOL.md).
 
 ## What you get
 
-- A top-right tray menu with camera on/off, the lenses reported by DroidCam, reconnect, and settings.
+- A native top-right Omarchy panel using `qs.Ui`'s KeyboardPanel, PanelHero, ToggleSwitch, CursorSurface, and separators, with the shell's fonts, palette, borders, animation preferences, and keyboard navigation.
+- Camera on/off, the lenses reported by DroidCam, video size, auto connect, reconnect, and settings. A standard tray menu remains available as a fallback.
 - USB-only device discovery and forwarding through `usbmuxd`/`iproxy`. No Wi-Fi address, OBS, account, or cloud video service.
 - A dedicated **iPhone Camera** virtual webcam at `/dev/video42` for Meet, Zoom, OBS, and other V4L2 consumers.
 - Resolution selection, optional automatic activation after USB connection, multi-iPhone selection, and reconnect after interrupted streams.
@@ -30,14 +31,16 @@ git clone https://github.com/Nikshay1/iphonecam.git
 cd iphonecam
 bin/install
 iphonecam setup
-iphonecam
+bin/enable-panel
+bin/enable-autostart
+iphonecam --tray
 ```
 
 `bin/install` builds, tests, and installs an Arch package with `makepkg`. `iphonecam setup` asks for sudo in your terminal, installs the loopback driver, and configures it to load at boot. Matching headers for the **running kernel** must already be installed (`linux-omarchy-headers` on the standard Omarchy kernel).
 
 The setup refuses to take over an occupied `/dev/video42` or unload an existing loopback driver used by another app. It never changes a physical camera. If another app already loaded v4l2loopback, close it and resolve that configuration before running setup again.
 
-Connect the iPhone and open DroidCam. Open the tray menu and choose **Turn camera on**. When frames are actually flowing, the tray icon turns green. Choose **iPhone Camera** in your calling app. Off stops the video producer; it does not close the iPhone app or revoke its camera permission.
+Connect the iPhone and open DroidCam. Click the camera icon in the upper-right bar and use the header toggle. When frames are actually flowing, the tray icon turns green. Choose **iPhone Camera** in your calling app. Off stops the video producer; it does not close the iPhone app or revoke its camera permission.
 
 ### Start at login
 
@@ -47,7 +50,9 @@ bin/enable-autostart
 
 This starts only the tray controller. Video stays off until you turn it on, unless you explicitly enable **Connect automatically**. Turning this setting on authorizes automatic video startup whenever a USB iPhone with DroidCam is discovered, including after reconnecting it.
 
-Omarchy may initially put the icon inside its tray drawer. Right-click the tray manager and pin **iphonecam** to keep it visible in the upper-right bar.
+`bin/enable-panel` installs the tracked QML plugin as `nikshay.iphonecam` in your user plugin directory, enables it before the tray, and hides the duplicate standard tray icon. It backs up existing plugin/config files. Run it again after updating the project to deploy new panel code. On another Linux desktop, skip it and use the standard tray menu.
+
+The native panel supports j/k or Up/Down to move, Enter/Space to activate, Left to return from a choice page, Escape to close, and Tab to switch to a neighboring Omarchy panel. You can also middle-click the bar icon to toggle video.
 
 ### Build without installation
 
@@ -81,7 +86,7 @@ iphonecam stop
 iphonecam quit
 ```
 
-`doctor` verifies dependencies and the dedicated virtual-camera identity. It does not open the phone camera. `status` reports the running app's state as JSON. The session D-Bus service `io.github.Nikshay1.iphonecam`, object `/App`, provides `Show`, `Toggle`, `Stop`, `SwitchCamera(int)`, `Status`, and `Quit` on the interface of the same name.
+`doctor` verifies dependencies and the dedicated virtual-camera identity. It does not open the phone camera. `status` reports the running app's state as JSON. `iphonecam watch` provides a bounded, deduplicated newline-delimited JSON event stream for the native panel; it subscribes to D-Bus instead of polling. The session D-Bus service `io.github.Nikshay1.iphonecam`, object `/App`, provides `Show`, `Toggle`, `Stop`, `SwitchCamera(int)`, `SetResolution(string)`, `SetAutoConnect(bool)`, `Reconnect`, `Status`, `StateChanged(string)` events, and `Quit` on the interface of the same name.
 
 For USB detection problems, check `idevice_id -l`, unlock the phone, accept Trust, and verify `systemctl status usbmuxd`. Do not share device identifiers when posting logs. If the camera is missing, run `iphonecam setup`. After changing resolution you may need to reopen the camera in a calling app that holds its old format open.
 
@@ -100,9 +105,10 @@ See [protocol and verification notes](docs/PROTOCOL.md) and [development instruc
 ```sh
 iphonecam quit
 rm -f ~/.config/autostart/iphonecam.desktop
+omarchy plugin disable nikshay.iphonecam
 sudo pacman -R iphonecam
 ```
 
-To remove only this project's boot configuration, remove `/etc/modprobe.d/iphonecam.conf`, `/etc/modules-load.d/iphonecam.conf`, and `/etc/udev/rules.d/80-iphonecam.rules`, then reboot after closing camera consumers. Dependencies are not automatically removed. Existing settings stay in `~/.config/iphonecam/iphonecam.conf`.
+To remove only this project's boot configuration, remove `/etc/modprobe.d/iphonecam.conf`, `/etc/modules-load.d/iphonecam.conf`, and `/etc/udev/rules.d/80-iphonecam.rules`, then reboot after closing camera consumers. Remove `~/.config/omarchy/plugins/nikshay.iphonecam` to remove the copied native panel, or keep it disabled. The standard tray icon can be unhidden through the Omarchy tray manager. Dependencies are not automatically removed. Existing settings stay in `~/.config/iphonecam/iphonecam.conf`.
 
 MIT licensed. Theme and language support adapt the Omarchy app templates by David Heinemeier Hansson. DroidCam's HTTP endpoints were researched from the vendor's documentation and [oma-cam's integration](https://github.com/saurasanchezpablo/oma-cam); no source from that project is bundled.

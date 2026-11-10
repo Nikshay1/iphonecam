@@ -1,5 +1,5 @@
 pkgname=iphonecam
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc='USB iPhone webcam with Omarchy tray controls and DroidCam lens switching'
 arch=('x86_64' 'aarch64')
@@ -32,4 +32,7 @@ package() {
   done
   install -Dm755 bin/setup-system "$pkgdir/usr/share/iphonecam/setup-system"
   install -Dm755 bin/enable-autostart "$pkgdir/usr/share/iphonecam/enable-autostart"
+  install -Dm755 bin/enable-panel "$pkgdir/usr/share/iphonecam/enable-panel"
+  install -d "$pkgdir/usr/share/iphonecam/omarchy-plugin"
+  cp -a omarchy-plugin/. "$pkgdir/usr/share/iphonecam/omarchy-plugin/"
 }

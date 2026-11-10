@@ -81,6 +81,17 @@ private slots:
         QVERIFY(file.open(QIODevice::WriteOnly)); file.write("en\n"); file.close();
         QTRY_COMPARE(translator.language(), QString("en"));
     }
+    void themePaletteFollowsFileReplacement() {
+        QTemporaryDir temp; QDir(temp.path()).mkdir("theme");
+        auto path = temp.filePath("theme/colors.toml");
+        QFile file(path); QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("accent = \"#aabbcc\"\nbackground = \"#090809\"\nforeground = \"#ffffff\"\n"); file.close();
+        Theme theme(temp.path()); QCOMPARE(theme.background(), QString("#090809")); QVERIFY(theme.dark());
+        QVERIFY(QFile::rename(path, path + ".old"));
+        QVERIFY(file.open(QIODevice::WriteOnly)); file.write("accent = \"#112233\"\nbackground = \"#eeeeee\"\nforeground = \"#111111\"\n"); file.close();
+        QTRY_COMPARE(theme.background(), QString("#eeeeee")); QVERIFY(!theme.dark());
+        QCOMPARE(theme.accent(), QString("#112233"));
+    }
     void realHttpControlsHonorProAndReportConfirmedLens() {
         QTcpServer phone; QVERIFY(phone.listen(QHostAddress::LocalHost));
         int active = 0; bool pro = false; QStringList requests;

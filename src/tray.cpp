@@ -6,6 +6,7 @@
 #include <QGuiApplication>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 
 QDBusArgument &operator<<(QDBusArgument &a, const MenuLayout &v) {
     a.beginStructure(); a << v.id << v.properties << v.children; a.endStructure(); return a;
@@ -111,10 +112,15 @@ QDBusVariant MenuAdaptor::GetProperty(int id, const QString &name) {
 }
 void MenuAdaptor::Event(int id, const QString &event, const QDBusVariant &, uint) { m_tray->handleMenuEvent(id, event); }
 
+AppAdaptor::AppAdaptor(Tray *tray) : QDBusAbstractAdaptor(tray), m_tray(tray) {
+    connect(tray->backend, &Backend::changed, this, [this] { emit StateChanged(Status()); });
+}
 QString AppAdaptor::Status() {
     auto *b = m_tray->backend;
     return QString::fromUtf8(QJsonDocument(QJsonObject{{"status", b->status()}, {"connected", b->connected()},
         {"enabled", b->enabled()}, {"streaming", b->streaming()}, {"lensControls", b->lensControls()},
-        {"message", b->message()}}).toJson(QJsonDocument::Compact));
+        {"message", b->message()}, {"phoneName", b->phoneName()}, {"cameras", QJsonArray::fromVariantList(b->cameras())},
+        {"activeCamera", b->activeCamera()}, {"lensBusy", b->lensBusy()}, {"resolution", b->resolution()},
+        {"autoConnect", b->autoConnect()}}).toJson(QJsonDocument::Compact));
 }
 void AppAdaptor::Quit() { m_tray->backend->quit(); }

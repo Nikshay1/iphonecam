@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "nikshay.iphonecam",
+  "name": "iPhone Camera",
+  "version": "0.2.0",
+  "author": "Nikshay",
+  "license": "MIT",
+  "description": "USB iPhone camera toggle, lens selection, and connection status",
+  "kinds": ["bar-widget"],
+  "entryPoints": {"barWidget": "Panel.qml"},
+  "barWidget": {
+    "displayName": "iPhone Camera",
+    "description": "USB webcam controls in an Omarchy panel",
+    "category": "Status",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

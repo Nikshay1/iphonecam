@@ -23,3 +23,16 @@ References:
 Automated tests exercise actual loopback HTTP requests and replies, including denied Pro controls, lens selection, and stale-session cancellation. They also validate device identity restrictions, QML interactions, translation changes, and tray serialization. A mock endpoint is not evidence of phone-version compatibility.
 
 Hardware acceptance requires an iPhone with DroidCam open, a working USB data cable, and the loopback module installed for the running kernel. Check camera-on output in a real V4L2 consumer, both lenses when Pro allows them, unplug while streaming, replug with automatic activation both disabled/enabled, and off/quit behavior. Record results in this file after performing them.
+
+
+## Local hardware verification · 2026-11-10
+
+- Omarchy 4.5.0, running kernel 7.2.15-1-omarchy, v4l2loopback 0.15.4, FFmpeg 9.0.2.
+- Detected a USB-connected iPhone with DroidCam open; received the vendor's Back/Front camera list.
+- Streamed 1280×720 YUV420P at 30 fps into the dedicated camera.
+- A separate FFmpeg V4L2 capture process consumed frames successfully without storing them.
+- Stopped desktop transmission and confirmed `enabled: false`, `streaming: false`.
+- Interrupted only the app-owned iproxy process while streaming; the app re-established its USB tunnel, resumed video, and another V4L2 consumer read frames successfully.
+- The phone returned the Pro restriction for `/v1/camera/info`; the app kept streaming and disabled remote lens changes with an explicit message. Physical front/back switching is not claimed as tested; successful control requests and denied requests are covered by a local HTTP fixture.
+- Native Omarchy panel rendered using the actual shell UI kit. Its documentation screenshot uses fictional demo state, never camera frames. All dynamic text uses plain-text sinks.
+- Full physical unplug/replug during a stream and a real Meet/Zoom call have not been tested. Automatic activation remains disabled on the installed app.

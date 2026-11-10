@@ -1,0 +1,9 @@
+{
+  "title": "iPhone Camera", "on": "USB · Camera on", "starting": "USB · Starting",
+  "connected": "USB · Camera off", "disconnected": "No iPhone connected",
+  "lens": "Camera lens", "resolution": "Video size", "autoConnect": "Auto connect",
+  "enabled": "On", "disabled": "Off", "choosePhone": "Choose on phone",
+  "back": "Back", "noPhone": "Connect your iPhone", "reconnect": "Reconnect USB",
+  "settings": "Settings", "actionFailed": "Could not apply the change. Check the camera service.",
+  "connectHint": "Connect USB, unlock the iPhone, and open DroidCam."
+}

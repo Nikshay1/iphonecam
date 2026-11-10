@@ -5,11 +5,15 @@ import os
 from pathlib import Path
 import subprocess
 import time
+import tempfile
+import selectors
 
 root = Path(__file__).resolve().parents[1]
 binary = str(root / "build/iphonecam")
-env = dict(os.environ, QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software", QT_QPA_PLATFORMTHEME="", QT_ACCESSIBILITY="0", NO_AT_BRIDGE="1")
+settings = tempfile.TemporaryDirectory(prefix="iphonecam-smoke-")
+env = dict(os.environ, XDG_CONFIG_HOME=settings.name, QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software", QT_QPA_PLATFORMTHEME="", QT_ACCESSIBILITY="0", NO_AT_BRIDGE="1")
 app = subprocess.Popen([binary, "--tray"], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+watcher = None
 service = "io.github.Nikshay1.iphonecam"
 
 
@@ -34,15 +38,33 @@ try:
     assert "Turn camera on" in layout and "Controls and setup" in layout, layout
     props = call("/StatusNotifierItem", "org.freedesktop.DBus.Properties.GetAll", "org.kde.StatusNotifierItem")
     assert "iphonecam" in props and "ItemIsMenu" in props, props
+    watcher = subprocess.Popen([binary, "watch"], env=env, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    with selectors.DefaultSelector() as selector:
+        selector.register(watcher.stdout, selectors.EVENT_READ)
+        assert selector.select(3), "No initial state from watch"
+        assert json.loads(watcher.stdout.readline())["autoConnect"] is False
+        call("/App", service + ".SetAutoConnect", "true")
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            assert selector.select(3), "No state-change event from watch"
+            if json.loads(watcher.stdout.readline()).get("autoConnect") is True:
+                break
+        else:
+            raise AssertionError("Watch did not report the changed preference")
+        call("/App", service + ".SetAutoConnect", "false")
     subprocess.run([binary, "stop"], env=env, check=True)
     call("/Menu", "com.canonical.dbusmenu.Event", "3", "clicked", "<0>", "0")
     subprocess.run([binary, "quit"], env=env, check=True)
     assert app.wait(timeout=5) == 0
-    print("PASS: separate-process D-Bus status, tray layout, properties, event, stop, and quit")
+    print("PASS: D-Bus status, tray layout, properties, actions, event stream, stop, and quit")
 finally:
+    if watcher is not None:
+        watcher.terminate()
+        watcher.wait(timeout=5)
     if app.poll() is None:
         app.terminate()
         app.wait(timeout=5)
     stdout, stderr = app.communicate()
     if stderr:
         print(stderr)
+    settings.cleanup()

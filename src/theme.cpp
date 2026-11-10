@@ -81,6 +81,17 @@ QString Theme::accentForeground() const {
     return luminance > .179 ? "black" : "white";
 }
 
+static QString mixColors(const QString &background, const QString &foreground, double fraction) {
+    QColor a(background), b(foreground);
+    return QColor::fromRgbF(a.redF() * (1 - fraction) + b.redF() * fraction,
+                           a.greenF() * (1 - fraction) + b.greenF() * fraction,
+                           a.blueF() * (1 - fraction) + b.blueF() * fraction).name();
+}
+QString Theme::muted() const { return mixColors(background(), foreground(), .60); }
+QString Theme::surface() const { return mixColors(background(), foreground(), .045); }
+QString Theme::border() const { return mixColors(background(), foreground(), .18); }
+bool Theme::dark() const { return QColor(background()).lightnessF() < .5; }
+
 void Theme::reload() {
     refreshRounding();
     const auto paths = m_watcher.files() + m_watcher.directories();
@@ -101,8 +112,17 @@ void Theme::reload() {
             m_watcher.addPath(path);
 
     const auto accent = readAccent(m_directory + "/theme/colors.toml");
-    if (accent != m_accent) {
+    QMap<QString, QString> palette;
+    QFile colors(m_directory + "/theme/colors.toml");
+    if (colors.open(QIODevice::ReadOnly)) {
+        const auto text = QString::fromUtf8(colors.readAll());
+        const QRegularExpression pattern(R"re(^\s*(background|foreground|green)\s*=\s*["'](#[0-9a-fA-F]{6})["'])re", QRegularExpression::MultilineOption);
+        auto matches = pattern.globalMatch(text);
+        while (matches.hasNext()) { auto match = matches.next(); palette[match.captured(1)] = match.captured(2); }
+    }
+    if (accent != m_accent || palette != m_palette) {
         m_accent = accent;
+        m_palette = palette;
         emit changed();
     }
 }
