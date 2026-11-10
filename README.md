@@ -2,113 +2,262 @@
 
 # iPhone Camera
 
-A small native Omarchy app that puts your USB-connected iPhone webcam in the system tray. Turn video on or off, choose a lens, and keep OBS out of the loop.
+Use your USB-connected iPhone as a webcam from a native Omarchy panel. No OBS or Wi-Fi setup required.
 
-**Hardware tested:** USB video at 1280×720 / 30 fps, a separate V4L2 consumer, off control, and recovery after an interrupted USB tunnel. This phone returned the Pro restriction for remote lens control, so physical lens switching is not yet hardware verified. See the [verification record](docs/PROTOCOL.md).
+**Two parts, one repository:** the **`iphonecam` Arch package** handles USB video and the virtual webcam; the **`nikshay.iphonecam` Omarchy plugin** provides the upper-right camera toggle, lens selection, video size, and reconnect controls. Install both using the steps below.
 
-## What you get
+## Give this to your AI agent
 
-- A native top-right Omarchy panel using `qs.Ui`'s KeyboardPanel, PanelHero, ToggleSwitch, CursorSurface, and separators, with the shell's fonts, palette, borders, animation preferences, and keyboard navigation.
-- Camera on/off, the lenses reported by DroidCam, video size, auto connect, reconnect, and settings. A standard tray menu remains available as a fallback.
-- USB-only device discovery and forwarding through `usbmuxd`/`iproxy`. No Wi-Fi address, OBS, account, or cloud video service.
-- A dedicated **iPhone Camera** virtual webcam at `/dev/video42` for Meet, Zoom, OBS, and other V4L2 consumers.
-- Resolution selection, optional automatic activation after USB connection, multi-iPhone selection, and reconnect after interrupted streams.
-- A Qt Quick window that follows Omarchy's accent, window rounding, and language live. English and Danish UI catalogs are included.
-- An Arch package, optional login startup, diagnostics, and a small D-Bus API for automation.
+```text
+Install https://github.com/Nikshay1/iphonecam on this Omarchy laptop.
+Follow the README's agent quickstart. Reuse an existing checkout or put it
+under my ~/Projects folder. Install the Arch package, configure the driver,
+enable the native Omarchy panel, and enable login startup. Verify the doctor
+JSON, backend status, and shell panel. Keep automatic camera activation off
+unless I request it. Help me connect DroidCam on my iPhone, and distinguish
+installation checks from a successful live video test. Report any Pro lens
+restriction honestly. Leave video off when finished unless I ask otherwise.
+```
 
-## What the iPhone still needs
+**Repository access:** this repository is currently private. The account cloning it must have access. A GitHub 404 or authentication error is an access problem; do not change repository visibility or put credentials in commands or files in this checkout.
 
-Install [DroidCam](https://droidcam.app/obs/) on the iPhone, allow camera access, unlock it, accept **Trust This Computer**, and keep DroidCam in the foreground. This project is an independent desktop controller; it does not include or redistribute DroidCam.
+## Agent quickstart: install on an Omarchy laptop
 
-**DroidCam Pro may be required for remote front/back selection.** The app requests the actual camera list and active-camera capabilities. It never guesses that camera 0 is front or back. If the phone denies remote controls, streaming still works and the UI explains the restriction. Use the lens selector on the phone in that case. HD availability and watermarks are controlled by DroidCam.
+Run the following **as the logged-in desktop user, in that user's Omarchy session**. Use that user's home directory, not the maintainer's machine-specific path. `makepkg`, the panel installer, and the app must run as the desktop user; package/driver installation uses sudo where needed.
 
-Linux does not have a default-webcam setting that every application follows. Select **iPhone Camera** once in each calling app. This app does not change existing meetings or browser camera permissions.
+### 1. Check the desktop and get the source
 
-## Install on Omarchy
+```bash
+command -v omarchy
+command -v omarchy-shell
+omarchy-shell shell ping
+```
 
-```sh
-git clone https://github.com/Nikshay1/iphonecam.git
-cd iphonecam
-bin/install
+The native panel uses Omarchy's Quickshell UI kit and was tested on **Omarchy 4.5.0**. An older Waybar-based installation cannot load this panel. If the shell is unavailable, report that limitation; the package can still provide a standard tray menu on a compatible desktop.
+
+Check for an existing `~/Projects/iphonecam` checkout first. If one exists, inspect `git status` and its remote, then reuse it without overwriting local work. Otherwise:
+
+```bash
+mkdir -p "$HOME/Projects"
+git clone https://github.com/Nikshay1/iphonecam.git "$HOME/Projects/iphonecam"
+cd "$HOME/Projects/iphonecam"
+```
+
+For a private-repository clone failure, check `gh auth status` if GitHub CLI is installed and use the user's authorized GitHub connection. Do not clone into a root-owned directory.
+
+### 2. Install build/runtime prerequisites and matching kernel headers
+
+These commands install packages. Run them in a terminal that can handle sudo prompts. An agent without an interactive terminal should use its secure credential-entry mechanism for sudo; never request a password in chat. **Do not run the whole source build as root.**
+
+Check headers for the kernel that is actually running:
+
+```bash
+kernel_release=$(uname -r)
+if [[ ! -d "/usr/lib/modules/$kernel_release/build" ]]; then
+  kernel_package=$(cat "/usr/lib/modules/$kernel_release/pkgbase")
+  omarchy pkg add "${kernel_package}-headers"
+fi
+
+test -d "/usr/lib/modules/$kernel_release/build"
+```
+
+On the standard Omarchy kernel, the headers package is `linux-omarchy-headers`; other kernels use their matching package. If the last check fails, stop here: the repository's headers may be newer than the running kernel. Explain the mismatch and arrange a kernel update/reboot with the user before continuing. Do not reboot automatically.
+
+Install dependencies **before** `bin/install`, because it builds the app before invoking `makepkg`:
+
+```bash
+omarchy pkg add base-devel git qt6-base qt6-declarative qt6-wayland qt6-svg \
+  ffmpeg libimobiledevice libusbmuxd usbmuxd v4l2loopback-dkms v4l-utils \
+  python glib2 jq
+```
+
+### 3. Install the package, driver, and native panel
+
+From the checkout root:
+
+```bash
+bin/install --noconfirm
 iphonecam setup
 bin/enable-panel
 bin/enable-autostart
-iphonecam --tray
 ```
 
-`bin/install` builds, tests, and installs an Arch package with `makepkg`. `iphonecam setup` asks for sudo in your terminal, installs the loopback driver, and configures it to load at boot. Matching headers for the **running kernel** must already be installed (`linux-omarchy-headers` on the standard Omarchy kernel).
+| Step | What it does | Success means |
+| --- | --- | --- |
+| `bin/install` | Builds/tests C++, then installs the Arch package with `makepkg` | `pacman -Q iphonecam` succeeds |
+| `iphonecam setup` | Configures boot-time loopback loading and the dedicated camera | `iphonecam doctor --json` reports `"ok": true` |
+| `bin/enable-panel` | Copies/enables the native shell plugin before the tray and hides the duplicate tray icon | `omarchy-shell iphonecam open` opens the panel |
+| `bin/enable-autostart` | Adds desktop-user login startup | `~/.config/autostart/iphonecam.desktop` exists |
 
-The setup refuses to take over an occupied `/dev/video42` or unload an existing loopback driver used by another app. It never changes a physical camera. If another app already loaded v4l2loopback, close it and resolve that configuration before running setup again.
+The driver setup reserves **`/dev/video42`**, named **iPhone Camera**. It refuses an occupied camera node or an already-loaded loopback module belonging to another application. Resolve that conflict instead of unloading another app's camera or substituting `/dev/video0`.
 
-Connect the iPhone and open DroidCam. Click the camera icon in the upper-right bar and use the header toggle. When frames are actually flowing, the tray icon turns green. Choose **iPhone Camera** in your calling app. Off stops the video producer; it does not close the iPhone app or revoke its camera permission.
+The panel installer backs up existing plugin/config files. It changes the user's Omarchy configuration, never `/usr/share/omarchy`. It expects the normal `omarchy.tray` widget; see troubleshooting for a customized layout.
 
-### Start at login
+### 4. Start the backend without blocking the agent's terminal
 
-```sh
-bin/enable-autostart
+Enabling the panel normally starts the backend through its state observer. If it is not already running, launch it as a transient user service:
+
+```bash
+if ! iphonecam status >/dev/null 2>&1; then
+  systemd-run --user --collect --unit=iphonecam \
+    --property=Restart=on-failure /usr/bin/iphonecam --tray
+fi
 ```
 
-This starts only the tray controller. Video stays off until you turn it on, unless you explicitly enable **Connect automatically**. Turning this setting on authorizes automatic video startup whenever a USB iPhone with DroidCam is discovered, including after reconnecting it.
+Allow a few seconds for startup, then verify:
 
-`bin/enable-panel` installs the tracked QML plugin as `nikshay.iphonecam` in your user plugin directory, enables it before the tray, and hides the duplicate standard tray icon. It backs up existing plugin/config files. Run it again after updating the project to deploy new panel code. On another Linux desktop, skip it and use the standard tray menu.
+```bash
+pacman -Q iphonecam
+iphonecam doctor --json | jq -e '.ok == true and .virtualCamera == true'
+iphonecam status | jq '{status, connected, enabled, streaming, autoConnect, message}'
+omarchy-shell iphonecam open
+```
 
-The native panel supports j/k or Up/Down to move, Enter/Space to activate, Left to return from a choice page, Escape to close, and Tab to switch to a neighboring Omarchy panel. You can also middle-click the bar icon to toggle video.
+**Installation is complete** when the package is installed, `doctor` passes, the backend answers, and the native panel opens. A phone is not required for these checks. With a fresh configuration, `enabled`, `streaming`, and `autoConnect` should be `false`. `connected: false` is expected until an iPhone is connected; it is not a failed installation. Existing user preferences should be preserved.
 
-### Build without installation
+`iphonecam --tray` and `iphonecam watch` are long-running processes. Do not run either as an unbounded foreground verification command. `watch` streams JSON events; `status` is the one-shot health/state query. Multiple app launches reuse the existing instance.
 
-```sh
+## Connect the iPhone and use the camera
+
+These steps happen on the phone and cannot be completed by a laptop-only installer:
+
+1. Install/open [DroidCam on the iPhone](https://droidcam.app/obs/) and allow camera access.
+2. Connect a **USB data cable** directly to the laptop, unlock the phone, and accept **Trust This Computer** if prompted.
+3. Keep DroidCam in the foreground. The Omarchy panel should report a USB connection.
+4. Turn on the header toggle in the camera panel.
+5. In Meet, Zoom, or your other calling app, select **iPhone Camera**. Keep your laptop/headset microphone selected if that is what you normally use.
+
+Linux has no default-webcam preference that every application follows. Select **iPhone Camera** once in each calling app; this installer does not alter meetings or browser permissions.
+
+**Front/back selection:** open **Camera lens** in the panel. Use the lenses reported by the phone, never a guessed camera ID. **DroidCam Pro may be required for remote lens selection.** If `lensControls` is `false`, inspect `message`; a Pro restriction is not a USB/video failure. You can select the lens on the phone. HD availability and watermarks are also controlled by DroidCam.
+
+**Auto connect** is optional and off by default. Enabling it authorizes video startup whenever a USB iPhone with DroidCam is discovered, including after reconnecting. Starting the tray app at login does not enable this setting.
+
+### Verify real video separately
+
+Once the phone is ready and video is intentionally turned on:
+
+```bash
+iphonecam status | jq '{connected, enabled, streaming, lensControls, message}'
+timeout 15 ffmpeg -hide_banner -loglevel error -f v4l2 \
+  -i /dev/video42 -frames:v 3 -f null -
+```
+
+Wait for `streaming: true` before opening the V4L2 consumer. The FFmpeg command reads three frames without recording them; a zero exit status demonstrates that another application can consume the virtual camera. `enabled: true` alone only means video was requested.
+
+Finish a test with:
+
+```bash
+iphonecam stop
+iphonecam status | jq -e '.enabled == false and .streaming == false'
+```
+
+Report precisely what passed: installation, USB discovery, video output, and/or a real conferencing call. A successful build, a demo, or a mock HTTP response is not proof of live iPhone video or physical lens switching.
+
+## Agent controls and automation
+
+| Command | Behavior |
+| --- | --- |
+| `iphonecam doctor --json` | One-shot dependency/camera identity check; exits 0 on success, 1 on failure |
+| `iphonecam status` | One-shot JSON snapshot; exits 1 if the backend is not running |
+| `iphonecam watch` | Persistent JSON event stream; starts the backend if absent |
+| `iphonecam toggle` | Toggles the requested video state; **not idempotent**, so read status first |
+| `iphonecam stop` | Stops transmission; safe to repeat |
+| `iphonecam open` | Opens the optional standalone settings window |
+| `iphonecam quit` | Stops video and exits the backend |
+| `omarchy-shell iphonecam open` / `close` | Opens/closes the native Omarchy panel |
+
+The native panel follows D-Bus events instead of polling. For resolution, lens, or connection preferences, this Bash helper calls the same backend API:
+
+```bash
+camera_call() {
+  local method="$1"
+  shift
+  gdbus call --session --dest io.github.Nikshay1.iphonecam \
+    --object-path /App --method "io.github.Nikshay1.iphonecam.$method" "$@"
+}
+
+camera_call SetResolution 1280x720
+```
+
+| Method | Argument | Effect |
+| --- | --- | --- |
+| `SetResolution` | `640x480`, `1280x720`, or `1920x1080` | Sets the output size; restarts an active stream |
+| `SwitchCamera` | Integer ID from `iphonecam status` → `cameras` | Selects a lens when `lensControls` permits it |
+| `SetAutoConnect` | `true` or `false` | Sets the user's automatic-activation preference |
+| `Reconnect` | None | Reconnects the USB tunnel |
+| `Stop` | None | Stops video |
+
+For example, `camera_call SetAutoConnect false` disables automatic activation. Do not enable it unless that is the user's preference. Inspect `iphonecam status | jq '{cameras, activeCamera, lensControls, message}'` before a lens change. The session service/interface is `io.github.Nikshay1.iphonecam`, object `/App`; `StateChanged(string)` carries JSON snapshots.
+
+## Troubleshooting
+
+| Symptom | Check and next action |
+| --- | --- |
+| Clone returns 404/authentication error | This repo is private; confirm the user's GitHub account has access. |
+| `qmake6` or Qt headers are missing | Install the prerequisites from step 2, then rerun `bin/install`. |
+| Missing running-kernel headers | Compare `uname -r` with `/usr/lib/modules/*/build`; install matching headers. A newer installed kernel may need a user-arranged reboot. |
+| `doctor` says the virtual camera is missing | Run `iphonecam setup`; inspect its error instead of substituting a physical camera. |
+| `/dev/video42` is occupied or loopback is already loaded | Preserve the other camera/app and resolve its configuration first. Do not force-unload its module. |
+| `iphonecam status` says not running | Start the backend using step 4. Run in the desktop user's session, with its session D-Bus available. |
+| No iPhone in `lsusb` | Try another data cable or direct USB port; keep the phone unlocked. Software cannot fix a charging-only connection. |
+| USB sees the phone but the app does not | Check `idevice_id -l` and `systemctl status usbmuxd`; accept Trust and open DroidCam. Restart the service only if its state requires it. |
+| Panel missing or `unknown` IPC target | Run `bin/enable-panel` again; allow the shell to reload. Check `omarchy plugin list --json` and `omarchy plugin validate omarchy-plugin`. |
+| Custom bar has no `omarchy.tray` anchor | After the plugin has been copied/rescanned, use `omarchy plugin enable nikshay.iphonecam --section right` to place it without that anchor. |
+| Front/back buttons are unavailable | Turn video on and inspect `lensControls`/`message`. Pro-denied remote controls do not require reinstalling the desktop app. |
+| Camera consumer says “Not a video capture device” | Wait for `streaming: true`. With exclusive capabilities, capture becomes available after the producer starts. |
+| Calling app keeps the old video size | Reopen its camera selector after changing resolution. |
+
+Device IDs from `idevice_id -l` and device names can be personal; omit them from public bug reports. If you used the transient service above, `journalctl --user -u iphonecam --no-pager -n 50` shows backend logs. Opening the panel starts an observer that can launch the backend, so close/disable the panel before troubleshooting a deliberate backend shutdown.
+
+## Update an existing installation
+
+From a clean existing checkout, run `git pull --ff-only`. Preserve unrelated local changes. Stop the old backend with `iphonecam quit` if it is running, then repeat **steps 3 and 4**. The plugin is a copied deployment, so **rerun `bin/enable-panel` after panel updates**; pulling Git alone does not update the active shell plugin. Existing preferences, including auto connect, remain in place. Driver setup need not be repeated for a documentation-only update.
+
+## Keyboard controls
+
+| Interface | Keys |
+| --- | --- |
+| Native panel | j/k or Up/Down to move; Enter/Space to activate; Left to return; Escape to close; Tab for neighboring panels |
+| Bar camera icon | Click to open; middle-click to toggle video |
+| Standalone window | Space to toggle; Escape to hide; Q to quit; ? for shortcut help |
+
+Closing the standalone window leaves the backend running. **Off** stops desktop transmission; it does not close DroidCam on the phone or revoke its camera permission.
+
+## Development and verification
+
+```bash
 bin/build
 bin/test
+node tests/panel_model.test.js
+dbus-run-session -- python tests/dbus_smoke.py
+omarchy plugin validate omarchy-plugin
 build/iphonecam --demo
-build/iphonecam --tray
 ```
 
-The demo uses fictional device data and opens neither a camera nor a USB tunnel. Its settings do not persist. Use `--demo --screenshot /absolute/path.png` for a reproducible UI image, or add `--danish` to render Danish without changing the desktop language.
+The optional model test needs `nodejs`. The demo uses fictional device data, opens no USB tunnel/camera, and does not persist preferences. `build/iphonecam --demo --screenshot /absolute/path.png` exports a demo window image; add `--danish` to check Danish without changing the desktop language. English and Danish catalogs are included.
 
-## Controls
-
-| Key | Action |
-| --- | --- |
-| Space | Turn camera on/off |
-| Escape | Hide the window to the tray |
-| Q | Quit and stop transmission |
-| ? | Show shortcuts |
-
-Closing the window leaves the tray app running. **Quit** stops video and exits. Multiple launches reuse the same running instance.
-
-## Diagnostics and automation
-
-```sh
-iphonecam doctor --json
-iphonecam status
-iphonecam toggle
-iphonecam stop
-iphonecam quit
-```
-
-`doctor` verifies dependencies and the dedicated virtual-camera identity. It does not open the phone camera. `status` reports the running app's state as JSON. `iphonecam watch` provides a bounded, deduplicated newline-delimited JSON event stream for the native panel; it subscribes to D-Bus instead of polling. The session D-Bus service `io.github.Nikshay1.iphonecam`, object `/App`, provides `Show`, `Toggle`, `Stop`, `SwitchCamera(int)`, `SetResolution(string)`, `SetAutoConnect(bool)`, `Reconnect`, `Status`, `StateChanged(string)` events, and `Quit` on the interface of the same name.
-
-For USB detection problems, check `idevice_id -l`, unlock the phone, accept Trust, and verify `systemctl status usbmuxd`. Do not share device identifiers when posting logs. If the camera is missing, run `iphonecam setup`. After changing resolution you may need to reopen the camera in a calling app that holds its old format open.
+**Hardware tested:** USB video at 1280×720 / 30 fps, a separate V4L2 consumer, off control, and recovery after an interrupted USB tunnel. The tested phone returned a Pro restriction for remote lens control; physical lens switching is not yet hardware verified. See [protocol and verification notes](docs/PROTOCOL.md). [AGENTS.md](AGENTS.md) covers maintainer development work; ordinary installation does not require editing source or pushing commits.
 
 ## Privacy and implementation
 
-Video flows from DroidCam on the iPhone, through an `iproxy` listener bound to **127.0.0.1**, into FFmpeg, then into the dedicated V4L2 output. No frame recording, screenshots of live video, telemetry, or background network calls are implemented. HTTP controls disable proxies, reject redirects, cap responses, and expire requests after 2.5 seconds. Old responses are discarded when the USB session changes.
+Video travels from DroidCam through an `iproxy` listener bound to **127.0.0.1**, into FFmpeg, then into the driver-checked `/dev/video42` output. No recording, telemetry, or cloud video service is implemented. Control requests disable proxies, reject redirects, bound response sizes, and expire after 2.5 seconds. Responses from old USB sessions are discarded.
 
-The tray uses StatusNotifierItem and D-BusMenu directly, so it works with Omarchy's QGuiApplication-based Quickshell without needing Qt Widgets. A timer checks attached USB device IDs every three seconds. It probes DroidCam while connecting and retries interrupted video while enabled. The phone can continue showing its local camera preview after desktop transmission is turned off.
-
-The setup enables a 1.5-second loopback timeout to replace stale images with a blank frame. Applications may cache their own last displayed frame; this project cannot erase another application's buffers.
-
-See [protocol and verification notes](docs/PROTOCOL.md) and [development instructions](AGENTS.md).
+The backend checks attached USB IDs every three seconds and retries interrupted video while enabled. A 1.5-second loopback timeout replaces stalled output with a blank frame; calling apps may retain their own cached image. The fallback tray uses StatusNotifierItem/D-BusMenu; the primary panel uses Omarchy's actual `qs.Ui` components and inherits shell styling.
 
 ## Uninstall
 
-```sh
-iphonecam quit
-rm -f ~/.config/autostart/iphonecam.desktop
+Disable the observer panel before quitting, so it cannot start another backend during removal:
+
+```bash
 omarchy plugin disable nikshay.iphonecam
+iphonecam quit
+rm -f "$HOME/.config/autostart/iphonecam.desktop"
 sudo pacman -R iphonecam
 ```
 
-To remove only this project's boot configuration, remove `/etc/modprobe.d/iphonecam.conf`, `/etc/modules-load.d/iphonecam.conf`, and `/etc/udev/rules.d/80-iphonecam.rules`, then reboot after closing camera consumers. Remove `~/.config/omarchy/plugins/nikshay.iphonecam` to remove the copied native panel, or keep it disabled. The standard tray icon can be unhidden through the Omarchy tray manager. Dependencies are not automatically removed. Existing settings stay in `~/.config/iphonecam/iphonecam.conf`.
+If the backend is already stopped, skip `iphonecam quit`. Remove `~/.config/omarchy/plugins/nikshay.iphonecam` to delete the copied panel. Unhide the fallback `iphonecam` tray icon through Omarchy's tray manager if retaining the package without the native panel.
 
-MIT licensed. Theme and language support adapt the Omarchy app templates by David Heinemeier Hansson. DroidCam's HTTP endpoints were researched from the vendor's documentation and [oma-cam's integration](https://github.com/saurasanchezpablo/oma-cam); no source from that project is bundled.
+To remove this project's boot configuration, remove `/etc/modprobe.d/iphonecam.conf`, `/etc/modules-load.d/iphonecam.conf`, and `/etc/udev/rules.d/80-iphonecam.rules`, then reboot after closing camera consumers. Dependencies are not automatically removed. User preferences remain in `~/.config/iphonecam/iphonecam.conf`.
+
+MIT licensed. Theme/language support adapts Omarchy application templates by David Heinemeier Hansson. DroidCam is a separate phone app; it is not bundled. Its HTTP endpoints were researched from vendor documentation and [oma-cam's integration](https://github.com/saurasanchezpablo/oma-cam); no source from that project is bundled.
