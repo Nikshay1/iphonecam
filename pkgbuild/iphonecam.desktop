@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=iPhone Camera
+Name[da]=iPhone-kamera
+Comment=Use your iPhone as a USB webcam from the tray
+Comment[da]=Brug din iPhone som USB-webkamera fra statuslinjen
+Exec=iphonecam open
+Icon=iphonecam
+Terminal=false
+Categories=AudioVideo;Video;Utility;
+StartupWMClass=iphonecam

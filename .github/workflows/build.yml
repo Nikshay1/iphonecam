@@ -1,0 +1,19 @@
+name: Build and test
+on: [push, pull_request]
+jobs:
+  arch:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - run: pacman -Syu --noconfirm git qt6-base qt6-declarative qt6-svg qt6-wayland python glib2
+      - uses: actions/checkout@v4
+      - run: bin/build
+      - run: dbus-run-session -- bin/test
+      - run: dbus-run-session -- python tests/dbus_smoke.py
+      - run: QT_QUICK_BACKEND=software build/iphonecam --demo --screenshot build/demo.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iphonecam-linux
+          path: |
+            build/iphonecam
+            build/demo.png

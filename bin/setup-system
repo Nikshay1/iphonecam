@@ -1,0 +1,43 @@
+#!/bin/bash
+set -euo pipefail
+
+if (( EUID != 0 )); then
+  exec sudo bash "$0" "$@"
+fi
+
+kernel=$(uname -r)
+if [[ ! -d /usr/lib/modules/$kernel/build ]]; then
+  echo "Missing headers for the running kernel ($kernel). Install matching kernel headers, then retry." >&2
+  exit 1
+fi
+
+# Never repurpose an existing physical camera or somebody else's loopback.
+if [[ -e /dev/video42 ]] && [[ $(cat /sys/class/video4linux/video42/name) != 'iPhone Camera' ]]; then
+  echo '/dev/video42 is already used by another camera. No camera configuration was changed.' >&2
+  exit 1
+fi
+if [[ -d /sys/module/v4l2loopback && ! -e /dev/video42 ]]; then
+  echo 'v4l2loopback is already loaded for another application. Close it and reboot before retrying; existing cameras will not be unloaded.' >&2
+  exit 1
+fi
+
+omarchy pkg add v4l2loopback-dkms v4l-utils ffmpeg libimobiledevice libusbmuxd usbmuxd
+install -d /etc/modules-load.d /etc/modprobe.d
+conf=/etc/modprobe.d/iphonecam.conf
+if [[ -e $conf ]] && ! cmp -s "$conf" <(printf '%s\n' 'options v4l2loopback devices=1 video_nr=42 card_label="iPhone Camera" exclusive_caps=1'); then
+  cp -a "$conf" "$conf.backup-$(date +%Y%m%d-%H%M%S)"
+fi
+printf '%s\n' 'options v4l2loopback devices=1 video_nr=42 card_label="iPhone Camera" exclusive_caps=1' > "$conf"
+printf '%s\n' 'v4l2loopback' > /etc/modules-load.d/iphonecam.conf
+install -d /etc/udev/rules.d
+printf '%s\n' 'ACTION=="add", SUBSYSTEM=="video4linux", ATTR{name}=="iPhone Camera", RUN+="/usr/bin/v4l2-ctl --device=/dev/%k --set-ctrl=timeout=1500"' > /etc/udev/rules.d/80-iphonecam.rules
+udevadm control --reload-rules
+modprobe v4l2loopback
+systemctl start usbmuxd
+if [[ $(cat /sys/class/video4linux/video42/name 2>/dev/null) != 'iPhone Camera' ]]; then
+  echo 'The driver loaded without the expected camera. Check other modprobe.d settings before retrying.' >&2
+  exit 1
+fi
+# Replace any frozen frame with a blank image if its producer stops responding.
+v4l2-ctl --device=/dev/video42 --set-ctrl=timeout=1500
+echo 'Ready. Open DroidCam on your iPhone, connect USB, and launch iPhone Camera.'

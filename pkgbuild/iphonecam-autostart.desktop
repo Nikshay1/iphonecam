@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=iPhone Camera
+Name[da]=iPhone-kamera
+Comment=USB iPhone webcam tray controls
+Comment[da]=Styr iPhone-USB-webkamera fra statuslinjen
+Exec=iphonecam --tray
+Icon=iphonecam
+Terminal=false
