@@ -241,7 +241,7 @@ The optional model test needs `nodejs`. The demo uses fictional device data, ope
 
 ## Launch video and X posts
 
-The [launch kit](marketing/README.md) includes the cinematic video renderer, generated hardware artwork, original score source, captions, and [ready-to-use X post drafts](marketing/X-POSTS.md). Rendered MP4/PNG exports are kept in `build/launch/` rather than committed.
+The [current launch kit](marketing/remotion/README.md) contains the independently reviewed 4:3 Remotion film, editable camera timeline, native UI assets, and original sound. [X post drafts](marketing/X-POSTS.md) and the older draft are also retained. Download the [current MP4](https://github.com/Nikshay1/iphonecam/releases/download/v0.2.0/iphonecam-remotion-v3.mp4) or render it into `build/launch-remotion/`.
 
 ## Privacy and implementation
 
