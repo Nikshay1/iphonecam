@@ -1,5 +1,11 @@
 # iPhone Camera launch kit
 
+## Current cut: native Remotion rebuild
+
+The current launch film is the [4:3 Remotion project](remotion/README.md), rebuilt with Liam Johnston’s Motion Graphics and Cinematic Camera skills. It uses the real native panel, a shared camera world, action-led timing, and an independent visual review gate. Render output: `build/launch-remotion/iphonecam-remotion-v3.mp4`. The earlier photographic/Cairo version below is retained as a draft, not the recommended cut.
+
+## Earlier draft
+
 A 26-second cinematic launch film for X, designed to work with audio muted. The visual style uses near-black, warm metallic highlights, monospaced typography, a slow hardware reveal, and a close-up of the actual native Omarchy panel.
 
 ## Deliverables

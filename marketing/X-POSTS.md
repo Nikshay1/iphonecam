@@ -1,6 +1,6 @@
 # X launch posts
 
-Attach `build/launch/iphonecam-x-cinematic.mp4`. Use `build/launch/iphonecam-poster.png` as the cover if the composer offers one. These are copy options, not a thread that must all be posted.
+Attach the current Remotion cut, `build/launch-remotion/iphonecam-remotion-v3.mp4`. Use `build/launch-remotion/iphonecam-remotion-cover.png` as the cover if the composer offers one. These are copy options, not a thread that must all be posted.
 
 ## 1. Cinematic launch · recommended
 
@@ -56,4 +56,4 @@ Remote lens controls were Pro-gated on my phone. The app reports that instead of
 
 ## Accessible video description
 
-A cinematic 26-second product film for iPhone Camera for Omarchy. A dark studio illustration shows an iPhone connected by USB to a laptop. Text reads “Your iPhone. Now a webcam.” The native Omarchy panel appears with an animated camera toggle and a camera-lens row. A note says DroidCam Pro may be required. The film ends with USB, no OBS, open source, and github.com/Nikshay1/iphonecam. The UI interaction is a demonstration, not footage of a live call.
+A 15-second product demonstration for iPhone Camera for Omarchy. The camera starts inside the real native Omarchy panel, focuses on its camera toggle, follows the connection to the dedicated virtual-camera diagnostic output, then moves to the product name and github.com/Nikshay1/iphonecam. The final hold states that DroidCam is required and remote lens controls may need Pro. The switch animation is a UI demonstration; no live camera or call footage is shown.

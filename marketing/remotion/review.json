@@ -1,0 +1,23 @@
+{
+  "critic": "independent",
+  "referenceId": "kickbacks-same-run-editor",
+  "verdict": "pass",
+  "scores": {
+    "research_fidelity": 9,
+    "reference_fidelity": 8,
+    "concept_specificity": 9,
+    "product_authenticity": 10,
+    "mobile_readability": 8,
+    "composition": 8,
+    "motion_causality": 9,
+    "material_restraint": 10
+  },
+  "hardFailures": [],
+  "notes": [
+    "Inspected the actual 1440x1080, 30 fps, 15-second MP4 through time samples from 0.0 to 14.9 seconds at 360x270 and key action/output/end frames at 720x540, alongside both candidate contact sheets, the authentic native panel and exact SVG, captured doctor JSON, and approved reference MP4 samples/contact sheet.",
+    "The toggle close-up at 2.2\u20133.5 seconds retains the complete native camera icon, iPhone Camera title, USB CAMERA OFF/ON state and switch together. The lower native panel is cropped during this close-up, but its essential identity and action remain visible; the prior identity failure is resolved.",
+    "UI demonstration and DroidCam required are readable throughout the action at 360x270, and the final hold from approximately 11.5 to 15.0 seconds gives the repo URL and separate DroidCam-on-iPhone/remote-lens-Pro qualification lines sufficient stable reading time. These qualifiers remain small at phone size, making readability adequate rather than exceptional.",
+    "Cursor click produces the supported native ON illustration; the camera then follows the neutral connector into a legible real-command terminal, holds on the captured /dev/video42, virtualCamera:true and ok:true fields, pulls back to show their spatial relationship and travels to the repo end hold. The diagnostic is a faithful subset of captured output and does not invent a call, live feed, lens-switch result, or metric.",
+    "The exact repository mark, real Omarchy surface and restrained dark monochrome materials are preserved. The connected action-to-result world follows the approved same-run mechanism. The overview at roughly 8.7\u201310.5 seconds is considerably smaller and sparser than the reference, reducing composition/reference scores, but the focal close-ups supply the necessary reading and the overview serves spatial orientation."
+  ]
+}
