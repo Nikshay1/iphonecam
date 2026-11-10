@@ -239,6 +239,10 @@ The optional model test needs `nodejs`. The demo uses fictional device data, ope
 
 **Hardware tested:** USB video at 1280×720 / 30 fps, a separate V4L2 consumer, off control, and recovery after an interrupted USB tunnel. The tested phone returned a Pro restriction for remote lens control; physical lens switching is not yet hardware verified. See [protocol and verification notes](docs/PROTOCOL.md). [AGENTS.md](AGENTS.md) covers maintainer development work; ordinary installation does not require editing source or pushing commits.
 
+## Launch video and X posts
+
+The [launch kit](marketing/README.md) includes the cinematic video renderer, generated hardware artwork, original score source, captions, and [ready-to-use X post drafts](marketing/X-POSTS.md). Rendered MP4/PNG exports are kept in `build/launch/` rather than committed.
+
 ## Privacy and implementation
 
 Video travels from DroidCam through an `iproxy` listener bound to **127.0.0.1**, into FFmpeg, then into the driver-checked `/dev/video42` output. No recording, telemetry, or cloud video service is implemented. Control requests disable proxies, reject redirects, bound response sizes, and expire after 2.5 seconds. Responses from old USB sessions are discarded.
